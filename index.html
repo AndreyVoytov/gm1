@@ -1,0 +1,49 @@
+<!doctype html>
+<html lang="ru">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Pun Ball Vertical</title>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <div class="game">
+      <header class="hud">
+        <div>
+          <div class="label">Счет</div>
+          <div id="score" class="value">0</div>
+        </div>
+        <div>
+          <div class="label">Уровень</div>
+          <div id="level" class="value">1</div>
+        </div>
+        <div>
+          <div class="label">Волна</div>
+          <div id="wave" class="value">1</div>
+        </div>
+      </header>
+
+      <canvas id="gameCanvas" width="360" height="640"></canvas>
+
+      <div class="hint">Персонаж стреляет сам. Выбирайте апгрейды, когда поднимете уровень.</div>
+
+      <div id="upgradeOverlay" class="overlay hidden">
+        <div class="overlay-card">
+          <h2>Выбор апгрейда</h2>
+          <p>Новый уровень! Усильте шары или добавьте новые.</p>
+          <div id="upgradeOptions" class="upgrade-options"></div>
+        </div>
+      </div>
+
+      <div id="gameOver" class="overlay hidden">
+        <div class="overlay-card">
+          <h2>Конец игры</h2>
+          <p id="finalScore"></p>
+          <button id="restartButton" class="primary">Начать заново</button>
+        </div>
+      </div>
+    </div>
+
+    <script src="script.js"></script>
+  </body>
+</html>

@@ -1,0 +1,141 @@
+:root {
+  color-scheme: dark;
+  font-family: "Segoe UI", system-ui, -apple-system, sans-serif;
+  background: #090c13;
+  --accent: #ffb84d;
+  --accent-strong: #ff8f1f;
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: radial-gradient(circle at top, #1b2140 0%, #090c13 60%);
+  color: #f6f6f6;
+}
+
+.game {
+  width: min(420px, 100vw);
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 16px 12px 24px;
+  gap: 12px;
+}
+
+.hud {
+  width: 100%;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+  text-align: center;
+}
+
+.hud .label {
+  font-size: 12px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  opacity: 0.7;
+}
+
+.hud .value {
+  font-size: 20px;
+  font-weight: 700;
+  margin-top: 4px;
+}
+
+#gameCanvas {
+  width: 100%;
+  flex: 1;
+  border-radius: 18px;
+  background: linear-gradient(180deg, #0f1430 0%, #0b0f25 100%);
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.4);
+}
+
+.hint {
+  font-size: 13px;
+  text-align: center;
+  opacity: 0.75;
+  padding: 0 10px;
+}
+
+.overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(3, 6, 14, 0.82);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  z-index: 10;
+}
+
+.overlay.hidden {
+  display: none;
+}
+
+.overlay-card {
+  background: #11182f;
+  border-radius: 18px;
+  padding: 24px;
+  width: min(360px, 100%);
+  text-align: center;
+  box-shadow: 0 18px 40px rgba(0, 0, 0, 0.4);
+}
+
+.overlay-card h2 {
+  margin-bottom: 8px;
+  color: var(--accent);
+}
+
+.overlay-card p {
+  font-size: 14px;
+  opacity: 0.85;
+  margin-bottom: 16px;
+}
+
+.upgrade-options {
+  display: grid;
+  gap: 12px;
+}
+
+.upgrade-options button,
+.primary {
+  border: none;
+  border-radius: 12px;
+  padding: 12px 14px;
+  background: #1f284d;
+  color: #f6f6f6;
+  font-weight: 600;
+  cursor: pointer;
+  transition: transform 0.2s ease, background 0.2s ease;
+}
+
+.upgrade-options button:hover,
+.primary:hover {
+  transform: translateY(-2px);
+  background: #2b3564;
+}
+
+.primary {
+  background: linear-gradient(135deg, var(--accent) 0%, var(--accent-strong) 100%);
+  color: #140c05;
+}
+
+@media (max-width: 480px) {
+  .game {
+    padding-top: 12px;
+  }
+
+  .hud .value {
+    font-size: 18px;
+  }
+}
