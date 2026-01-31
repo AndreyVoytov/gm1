@@ -12,23 +12,32 @@
   padding: 0;
 }
 
+html,
 body {
-  min-height: 100vh;
+  height: 100%;
+}
+
+body {
+  min-height: 100dvh;
   display: flex;
   align-items: center;
   justify-content: center;
   background: radial-gradient(circle at top, #1b2140 0%, #090c13 60%);
   color: #f6f6f6;
+  overflow: hidden;
+  overscroll-behavior: none;
+  touch-action: none;
 }
 
 .game {
   width: min(420px, 100vw);
-  height: 100vh;
+  height: 100dvh;
   display: flex;
   flex-direction: column;
   align-items: center;
   padding: 16px 12px 24px;
   gap: 12px;
+  touch-action: none;
 }
 
 .hud {
