@@ -33,6 +33,8 @@ const state = {
   burstShotsRemaining: 0,
   spawnCooldown: 0,
   moveSpeed: 24,
+  playerSpeed: 220 / 3,
+  playerMoveBoost: 0,
   levelThresholds: [200],
   pendingUpgrades: 0,
 };
@@ -133,6 +135,8 @@ function resetGame() {
   state.burstShotsRemaining = 0;
   state.spawnCooldown = 0.5;
   state.moveSpeed = 24;
+  state.playerSpeed = 220 / 3;
+  state.playerMoveBoost = 0;
   state.levelThresholds = [200];
   state.pendingUpgrades = 0;
   state.isPaused = false;
@@ -165,7 +169,8 @@ function spawnWave() {
 
   for (let col = 0; col < columns; col += 1) {
     if (Math.random() > 0.25) {
-      const hp = Math.floor(state.level + Math.random() * state.level);
+      const baseHp = Math.floor(state.level + Math.random() * state.level);
+      const hp = baseHp * 2;
       state.cubes.push({
         x: padding + col * cell + 2,
         y: -cubeSize - 4,
@@ -283,7 +288,7 @@ function updateBalls(delta) {
 
 function updateCubes(delta) {
   for (const cube of state.cubes) {
-    cube.y += state.moveSpeed * delta;
+    cube.y += (state.moveSpeed + state.playerMoveBoost) * delta;
   }
 
   const reachedBottom = state.cubes.some((cube) => cube.y + cube.size >= state.height - 30);
@@ -450,13 +455,15 @@ function updatePlayer(delta) {
   }
 
   if (inputX === 0 && inputY === 0) {
+    state.playerMoveBoost = 0;
     return;
   }
-  const speed = 220;
+  const speed = state.playerSpeed;
   player.x += inputX * speed * delta;
   player.y += inputY * speed * delta;
   player.x = clamp(player.x, player.radius, state.width - player.radius);
   player.y = clamp(player.y, player.radius, state.height - player.radius);
+  state.playerMoveBoost = speed;
 }
 
 function updateJoystickVisuals() {
