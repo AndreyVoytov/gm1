@@ -9,6 +9,8 @@ const upgradeOptions = document.getElementById("upgradeOptions");
 const gameOverOverlay = document.getElementById("gameOver");
 const finalScoreEl = document.getElementById("finalScore");
 const restartButton = document.getElementById("restartButton");
+const joystickBase = document.getElementById("joystickBase");
+const joystickKnob = document.getElementById("joystickKnob");
 
 const state = {
   width: canvas.width,
@@ -31,12 +33,24 @@ const state = {
   burstShotsRemaining: 0,
   spawnCooldown: 0,
   moveSpeed: 24,
+  levelThresholds: [200],
+  pendingUpgrades: 0,
 };
 
 const player = {
   x: state.width / 2,
   y: state.height - 64,
   radius: 16,
+};
+
+const joystick = {
+  active: false,
+  baseX: 0,
+  baseY: 0,
+  pointerId: null,
+  maxDistance: 50,
+  inputX: 0,
+  inputY: 0,
 };
 
 const upgrades = [
@@ -112,6 +126,8 @@ function resetGame() {
   state.burstShotsRemaining = 0;
   state.spawnCooldown = 0.5;
   state.moveSpeed = 24;
+  state.levelThresholds = [200];
+  state.pendingUpgrades = 0;
   state.isPaused = false;
   state.isGameOver = false;
   hideOverlay(gameOverOverlay);
@@ -135,17 +151,17 @@ function hideOverlay(overlay) {
 
 function spawnWave() {
   const columns = 6;
-  const padding = 8;
+  const padding = 4;
   const availableWidth = state.width - padding * 2;
   const cell = availableWidth / columns;
-  const cubeSize = cell - 6;
+  const cubeSize = cell - 4;
 
   for (let col = 0; col < columns; col += 1) {
     if (Math.random() > 0.25) {
       const hp = Math.floor(state.level + Math.random() * state.level);
       state.cubes.push({
-        x: padding + col * cell + 3,
-        y: -cubeSize - 6,
+        x: padding + col * cell + 2,
+        y: -cubeSize - 4,
         size: cubeSize,
         hp,
         maxHp: hp,
@@ -270,14 +286,31 @@ function updateCubes(delta) {
 }
 
 function updateLevel() {
-  const targetLevel = Math.floor(state.score / 400) + 1;
-  if (targetLevel > state.level) {
-    state.level = targetLevel;
-    showUpgrade();
+  while (state.score >= state.levelThresholds[state.levelThresholds.length - 1]) {
+    const lastThreshold = state.levelThresholds[state.levelThresholds.length - 1];
+    state.levelThresholds.push(lastThreshold * 2);
+  }
+  let newLevel = 1;
+  for (let i = 0; i < state.levelThresholds.length; i += 1) {
+    if (state.score >= state.levelThresholds[i]) {
+      newLevel = i + 2;
+    } else {
+      break;
+    }
+  }
+  if (newLevel > state.level) {
+    state.pendingUpgrades += newLevel - state.level;
+    state.level = newLevel;
+    if (!state.isPaused) {
+      showUpgrade();
+    }
   }
 }
 
 function showUpgrade() {
+  if (state.pendingUpgrades <= 0) {
+    return;
+  }
   state.isPaused = true;
   upgradeOptions.innerHTML = "";
   const options = upgrades
@@ -289,9 +322,13 @@ function showUpgrade() {
     button.innerHTML = `<strong>${upgrade.title}</strong><br /><span>${upgrade.description}</span>`;
     button.addEventListener("click", () => {
       upgrade.apply();
+      state.pendingUpgrades -= 1;
       hideOverlay(upgradeOverlay);
       state.isPaused = false;
       updateHud();
+      if (state.pendingUpgrades > 0) {
+        showUpgrade();
+      }
     });
     upgradeOptions.appendChild(button);
   });
@@ -374,11 +411,89 @@ function render() {
   drawPlayer();
 }
 
+function clamp(value, min, max) {
+  return Math.min(max, Math.max(min, value));
+}
+
+function updatePlayer(delta) {
+  if (!joystick.active) {
+    return;
+  }
+  const speed = 220;
+  player.x += joystick.inputX * speed * delta;
+  player.y += joystick.inputY * speed * delta;
+  player.x = clamp(player.x, player.radius, state.width - player.radius);
+  player.y = clamp(player.y, player.radius, state.height - player.radius);
+}
+
+function updateJoystickVisuals() {
+  if (!joystick.active) {
+    return;
+  }
+  joystickBase.style.left = `${joystick.baseX}px`;
+  joystickBase.style.top = `${joystick.baseY}px`;
+  joystickKnob.style.left = `${joystick.baseX + joystick.inputX * joystick.maxDistance}px`;
+  joystickKnob.style.top = `${joystick.baseY + joystick.inputY * joystick.maxDistance}px`;
+}
+
+function setJoystickVisibility(isVisible) {
+  if (isVisible) {
+    joystickBase.classList.remove("hidden");
+    joystickKnob.classList.remove("hidden");
+    joystickBase.style.opacity = "1";
+    joystickKnob.style.opacity = "1";
+  } else {
+    joystickBase.classList.add("hidden");
+    joystickKnob.classList.add("hidden");
+  }
+}
+
+function handlePointerDown(event) {
+  if (state.isGameOver) {
+    return;
+  }
+  joystick.active = true;
+  joystick.pointerId = event.pointerId;
+  joystick.baseX = event.clientX;
+  joystick.baseY = event.clientY;
+  joystick.inputX = 0;
+  joystick.inputY = 0;
+  setJoystickVisibility(true);
+  updateJoystickVisuals();
+  canvas.setPointerCapture(event.pointerId);
+}
+
+function handlePointerMove(event) {
+  if (!joystick.active || joystick.pointerId !== event.pointerId) {
+    return;
+  }
+  const dx = event.clientX - joystick.baseX;
+  const dy = event.clientY - joystick.baseY;
+  const distance = Math.hypot(dx, dy);
+  const clampedDistance = Math.min(distance, joystick.maxDistance);
+  const angle = Math.atan2(dy, dx);
+  joystick.inputX = (Math.cos(angle) * clampedDistance) / joystick.maxDistance || 0;
+  joystick.inputY = (Math.sin(angle) * clampedDistance) / joystick.maxDistance || 0;
+  updateJoystickVisuals();
+}
+
+function handlePointerUp(event) {
+  if (joystick.pointerId !== event.pointerId) {
+    return;
+  }
+  joystick.active = false;
+  joystick.pointerId = null;
+  joystick.inputX = 0;
+  joystick.inputY = 0;
+  setJoystickVisibility(false);
+}
+
 let lastTime = 0;
 function tick(timestamp) {
   const delta = Math.min(0.033, (timestamp - lastTime) / 1000 || 0);
   lastTime = timestamp;
   update(delta);
+  updatePlayer(delta);
   render();
   requestAnimationFrame(tick);
 }
@@ -390,6 +505,11 @@ window.addEventListener("resize", () => {
 restartButton.addEventListener("click", () => {
   resetGame();
 });
+
+canvas.addEventListener("pointerdown", handlePointerDown);
+canvas.addEventListener("pointermove", handlePointerMove);
+canvas.addEventListener("pointerup", handlePointerUp);
+canvas.addEventListener("pointercancel", handlePointerUp);
 
 resizeCanvas();
 resetGame();
