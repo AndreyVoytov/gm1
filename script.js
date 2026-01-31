@@ -53,6 +53,13 @@ const joystick = {
   inputY: 0,
 };
 
+const keyboard = {
+  up: false,
+  down: false,
+  left: false,
+  right: false,
+};
+
 const upgrades = [
   {
     title: "Усиление урона",
@@ -416,12 +423,38 @@ function clamp(value, min, max) {
 }
 
 function updatePlayer(delta) {
-  if (!joystick.active) {
+  let inputX = 0;
+  let inputY = 0;
+
+  if (joystick.active) {
+    inputX = joystick.inputX;
+    inputY = joystick.inputY;
+  } else {
+    if (keyboard.left) {
+      inputX -= 1;
+    }
+    if (keyboard.right) {
+      inputX += 1;
+    }
+    if (keyboard.up) {
+      inputY -= 1;
+    }
+    if (keyboard.down) {
+      inputY += 1;
+    }
+    if (inputX !== 0 || inputY !== 0) {
+      const length = Math.hypot(inputX, inputY);
+      inputX /= length;
+      inputY /= length;
+    }
+  }
+
+  if (inputX === 0 && inputY === 0) {
     return;
   }
   const speed = 220;
-  player.x += joystick.inputX * speed * delta;
-  player.y += joystick.inputY * speed * delta;
+  player.x += inputX * speed * delta;
+  player.y += inputY * speed * delta;
   player.x = clamp(player.x, player.radius, state.width - player.radius);
   player.y = clamp(player.y, player.radius, state.height - player.radius);
 }
@@ -452,6 +485,7 @@ function handlePointerDown(event) {
   if (state.isGameOver) {
     return;
   }
+  event.preventDefault();
   joystick.active = true;
   joystick.pointerId = event.pointerId;
   joystick.baseX = event.clientX;
@@ -467,6 +501,7 @@ function handlePointerMove(event) {
   if (!joystick.active || joystick.pointerId !== event.pointerId) {
     return;
   }
+  event.preventDefault();
   const dx = event.clientX - joystick.baseX;
   const dy = event.clientY - joystick.baseY;
   const distance = Math.hypot(dx, dy);
@@ -481,11 +516,40 @@ function handlePointerUp(event) {
   if (joystick.pointerId !== event.pointerId) {
     return;
   }
+  event.preventDefault();
   joystick.active = false;
   joystick.pointerId = null;
   joystick.inputX = 0;
   joystick.inputY = 0;
   setJoystickVisibility(false);
+}
+
+function updateKeyboardState(event, isPressed) {
+  switch (event.key) {
+    case "ArrowUp":
+    case "w":
+    case "W":
+      keyboard.up = isPressed;
+      break;
+    case "ArrowDown":
+    case "s":
+    case "S":
+      keyboard.down = isPressed;
+      break;
+    case "ArrowLeft":
+    case "a":
+    case "A":
+      keyboard.left = isPressed;
+      break;
+    case "ArrowRight":
+    case "d":
+    case "D":
+      keyboard.right = isPressed;
+      break;
+    default:
+      return;
+  }
+  event.preventDefault();
 }
 
 let lastTime = 0;
@@ -510,6 +574,11 @@ canvas.addEventListener("pointerdown", handlePointerDown);
 canvas.addEventListener("pointermove", handlePointerMove);
 canvas.addEventListener("pointerup", handlePointerUp);
 canvas.addEventListener("pointercancel", handlePointerUp);
+window.addEventListener("pointermove", handlePointerMove);
+window.addEventListener("pointerup", handlePointerUp);
+window.addEventListener("pointercancel", handlePointerUp);
+window.addEventListener("keydown", (event) => updateKeyboardState(event, true));
+window.addEventListener("keyup", (event) => updateKeyboardState(event, false));
 
 resizeCanvas();
 resetGame();
